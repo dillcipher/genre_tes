@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ujian Master GenRe 2026 ~ LEGACY</title>
+  <meta name="theme-color" content="#0b1220" />
+  <style>
+    :root{
+      --bg0:#070b14; --bg1:#0b1220; --line: rgba(255,255,255,.12);
+      --text:#eaf1ff; --muted:#b9c7e6; --accent:#7aa2ff; --accent2:#b27dff;
+      --ok:#35c27c; --bad:#ff5a6a; --warn:#ffcc66; --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; font-family: ui-sans-serif, system-ui, sans-serif; color:var(--text); background: radial-gradient(1200px 700px at 20% 10%, rgba(122,162,255,.18), transparent 60%), linear-gradient(180deg, var(--bg1), var(--bg0)); }
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 18px 14px 28px; }
+    header{ position: sticky; top:0; z-index: 50; backdrop-filter: blur(10px); background: rgba(11,18,32,.85); border-bottom: 1px solid var(--line); }
+    .head-inner{ max-width: 980px; margin: 0 auto; padding: 14px; display:flex; justify-content: space-between; align-items:center; flex-wrap:wrap; }
+    .titlebox h1{ font-size: 16px; margin:0; } .sub{ color: var(--muted); font-size: 12px; }
+    .pill{ border:1px solid var(--line); background: rgba(255,255,255,.05); padding: 8px 10px; border-radius: 999px; color: var(--muted); font-size: 12px; }
+    .btn{ border:1px solid var(--line); background: rgba(255,255,255,.06); color: var(--text); padding: 10px 14px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+    .btn.primary{ background: var(--accent); color:var(--bg1); border:none; }
+    .btn.danger{ background: var(--bad); color:white; border:none; }
+    .card{ border: 1px solid var(--line); background: rgba(255,255,255,.05); border-radius: var(--radius); padding:20px; box-shadow: var(--shadow); }
+    .main{ display:grid; grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }
+    @media (min-width: 900px){ .main{ grid-template-columns: 320px 1fr; align-items:start; } }
+    .tabs{ display:flex; gap:10px; margin-bottom: 15px; }
+    .tab{ padding: 8px 15px; border-radius: 999px; font-size: 13px; font-weight:bold; cursor:pointer; background:rgba(255,255,255,.05); }
+    .tab.active{ background:var(--accent); color:var(--bg1); }
+    .stat{ border:1px solid var(--line); background:rgba(0,0,0,.2); padding:10px; border-radius:12px; margin-bottom:10px;}
+    .stat .val{ font-size: 20px; font-weight:bold; color:var(--accent); }
+    .qtitle{ font-size: 16px; font-weight: bold; margin-bottom: 15px; line-height:1.5; }
+    .opt{ border:1px solid var(--line); background:rgba(255,255,255,.03); padding:12px; border-radius:12px; margin-bottom:8px; cursor:pointer; display:flex; gap:10px;}
+    .opt.selected{ border-color:var(--accent); background:rgba(122,162,255,.15); }
+    .opt.correct{ border-color:var(--ok); background:rgba(53,194,124,.15); }
+    .opt.wrong{ border-color:var(--bad); background:rgba(255,90,106,.15); }
+    .feedback{ margin-top:15px; padding:15px; background:rgba(0,0,0,.3); border-left:4px solid var(--accent); border-radius:8px; display:none; font-size:14px; line-height:1.5;}
+    textarea{ width:100%; min-height:200px; border-radius:12px; background:rgba(0,0,0,.3); border:1px solid var(--line); padding:15px; color:white; font-family:inherit; outline:none;}
+  </style>
+</head>
+<body>
+<header>
+  <div class="head-inner">
+    <div class="titlebox"><h1>Master Exam: GenRe & Isu Kontemporer</h1><div class="sub">50 PG + 10 Esai (Teori & Kasus)</div></div>
+    <div style="display:flex; gap:10px;">
+      <div class="pill" id="pillIndex">Soal 1/50</div>
+      <button class="btn danger" onclick="resetAll()">Reset</button>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <div class="main">
+    <aside class="card">
+      <div class="tabs">
+        <div class="tab active" id="tabPG" onclick="setMode('PG')">Pilihan Ganda</div>
+        <div class="tab" id="tabES" onclick="setMode('ES')">Esai/Kasus</div>
+      </div>
+      <div class="stat"><div style="font-size:12px; color:var(--muted)">Skor PG Sementara</div><div class="val" id="skorDisplay">0%</div></div>
+      <div class="stat"><div style="font-size:12px; color:var(--muted)">Esai Terjawab</div><div class="val" id="esaiDisplay">0/10</div></div>
+    </aside>
+    <section class="card" id="contentArea"></section>
+  </div>
+</div>
+
+<script>
+// --- BANK SOAL PG (50 SOAL) ---
+const BANK_PG = [
+  {q:"Sesuai UU No. 16 Tahun 2019, batas usia minimal perkawinan untuk laki-laki dan perempuan adalah...", opts:["18 Tahun","19 Tahun","21 Tahun","25 Tahun"], ans:1, exp:"UU 16/2019 merevisi batas usia menjadi 19 tahun bagi laki-laki dan perempuan."},
+  {q:"BKKBN menyarankan usia ideal menikah untuk perempuan dan laki-laki adalah...", opts:["19 dan 21 tahun","20 dan 25 tahun","21 dan 25 tahun","25 dan 30 tahun"], ans:2, exp:"Kematangan fisik (panggul) perempuan di usia 21, dan emosional/finansial laki-laki di 25."},
+  {q:"Apa kepanjangan dari Bangga Kencana?", opts:["Pembangunan Keluarga, Kependudukan, dan Keluarga Berencana","Pembangunan Generasi, Kependudukan, dan Keluarga Berencana","Pengembangan Keluarga, Kependudukan, dan Keberlanjutan","Bangun Keluarga, Kependudukan, dan Berencana"], ans:0, exp:"Bangga Kencana = Pembangunan Keluarga, Kependudukan, dan Keluarga Berencana."},
+  {q:"Kondisi rapuh secara mental, mudah menyerah, namun kreatif dan cerdas, sering diasosiasikan dengan generasi...", opts:["Sandwich Generation","Alpha Generation","Strawberry Generation","Baby Boomers"], ans:2, exp:"Strawberry generation indah di luar namun mudah hancur ketika ditekan."},
+  {q:"Individu yang harus membiayai hidup orang tuanya dan juga membiayai anak-anaknya disebut...", opts:["Helicopter Parent","Beban Ganda","Sandwich Generation","Toxic Family"], ans:2, exp:"Sandwich Generation terjepit di antara generasi atas dan bawah secara finansial."},
+  {q:"Aplikasi yang wajib diisi oleh Calon Pengantin (Catin) sebagai upaya pencegahan stunting dari BKKBN adalah...", opts:["PeduliLindungi","Siga","Elsimil","KeluargaHebat"], ans:2, exp:"Elsimil = Elektronik Siap Nikah dan Hamil."},
+  {q:"Kekurangan sel darah merah (hemoglobin) pada remaja putri yang menjadi salah satu akar stunting disebut...", opts:["Leukemia","Hipotensi","Anemia","Thalasemia"], ans:2, exp:"Anemia dicegah dengan meminum Tablet Tambah Darah (TTD)."},
+  {q:"Konsep Pembangunan Global yang menggantikan MDGs (Millennium Development Goals) adalah...", opts:["SDGs (Sustainable Development Goals)","GBHN","Nawacita","Quick Wins"], ans:0, exp:"SDGs adalah target pembangunan global hingga tahun 2030."},
+  {q:"Dalam 8 Fungsi Keluarga, menanamkan gotong royong dan sopan santun termasuk fungsi...", opts:["Agama","Cinta Kasih","Sosial Budaya","Perlindungan"], ans:2, exp:"Sosial Budaya berakar pada norma, etika, dan gotong royong masyarakat."},
+  {q:"Program edukasi gizi remaja dari BKKBN untuk menurunkan angka stunting dikenal dengan jargon...", opts:["Berani Beraksi","Ini Genting","Salam GenRe","Zero Stunting"], ans:1, exp:"Ini Genting = Implementasi Nyata GenRe Cegah Stunting."},
+  {q:"Undang-Undang yang mengatur tentang Narkotika di Indonesia adalah...", opts:["UU No 12 Tahun 2022","UU No 35 Tahun 2009","UU No 16 Tahun 2019","UU No 52 Tahun 2009"], ans:1, exp:"UU No 35/2009 mengatur Narkotika."},
+  {q:"Pemberian afeksi, perhatian, dan hadiah secara berlebihan di awal hubungan dengan tujuan memanipulasi pasangan disebut...", opts:["Self Love","Meaningful Youth","Love Bombing","Interpersonal Skill"], ans:2, exp:"Love Bombing adalah taktik manipulasi red flag dalam pacaran berisiko."},
+  {q:"Penyebaran konten intim tanpa persetujuan (Non-Consensual Intimate Image) untuk mengancam korban disebut...", opts:["Cyber bullying","Tokenisme","Revenge Porn","Sexist Joke"], ans:2, exp:"Revenge Porn diatur penindakannya dalam UU TPKS No. 12 Tahun 2022."},
+  {q:"Fenomena remaja yang merasa cemas atau takut tertinggal oleh tren di media sosial disebut...", opts:["JOMO","Quarter Life Crisis","FOMO","Overthinking"], ans:2, exp:"FOMO = Fear Of Missing Out."},
+  {q:"Kemampuan menolak ajakan teman (misal: ajakan narkoba) dengan tegas namun tanpa menyakiti perasaan disebut...", opts:["Agresif","Pasif","Empati","Asertif"], ans:3, exp:"Asertif adalah salah satu core life skill menurut WHO."},
+  {q:"Target Total Fertility Rate (TFR) agar pertumbuhan penduduk seimbang (Replacement Level) adalah...", opts:["1.5","2.1","3.0","2.5"], ans:1, exp:"TFR 2.1 artinya rata-rata 1 perempuan melahirkan 2,1 anak selama masa suburnya."},
+  {q:"Pelibatan remaja dalam program kerja di mana mereka hanya dijadikan simbol atau pajangan tanpa suara yang nyata disebut...", opts:["Meaningful Youth Participation","Tokenisme","Ageism","Inklusifitas"], ans:1, exp:"Tokenisme adalah representasi palsu, berlawanan dengan MYP."},
+  {q:"Berikut adalah Triad KRR yang menjadi musuh utama GenRe, KECUALI...", opts:["Pernikahan Dini","Seks Pranikah","Stunting","NAPZA"], ans:2, exp:"Triad KRR: Nikah Dini, Seks Pranikah, NAPZA. (Stunting adalah dampak)."},
+  {q:"Kondisi psikologis krisis seperempat abad di mana individu usia 20-an merasa bingung akan arah hidupnya disebut...", opts:["Strawberry Phase","Insecurity","Quarter Life Crisis","Bipolar"], ans:2, exp:"Quarter Life Crisis sangat wajar terjadi pada transisi remaja akhir menuju dewasa."},
+  {q:"Sifat egois yang tidak senang melihat orang lain maju dan berusaha menjatuhkannya ke bawah (seperti kepiting dalam ember) disebut...", opts:["Toxic Masculinity","Crab Mentality","Fatherless","Self Diagnose"], ans:1, exp:"Crab Mentality menghambat kemajuan kolaborasi antar remaja."},
+  {q:"Rebranding logo BKKBN berbentuk apa yang merepresentasikan merangkul dan cinta tanpa batas?", opts:["Keluarga dengan dua anak","Lingkaran biru","Hati/Cinta (Love)","Pohon beringin"], ans:2, exp:"Logo baru berbentuk formasi hati melambangkan cinta keluarga tanpa batas."},
+  {q:"Prinsip pencegahan HIV/AIDS huruf 'C' pada A-B-C-D-E singkatan dari...", opts:["Care","Condom","Communication","Child"], ans:1, exp:"A(Abstinence), B(Be Faithful), C(Condom), D(Drug No), E(Education)."},
+  {q:"Tahapan transisi remaja yang ke-5 (terakhir) dalam 5 Transisi Kehidupan Remaja adalah...", opts:["Melanjutkan Sekolah","Mencari Pekerjaan","Mempraktikkan Hidup Sehat","Memulai Kehidupan Berkeluarga"], ans:3, exp:"Fase puncaknya adalah kesiapan memulai berkeluarga."},
+  {q:"Menstruasi pada remaja putri dan 'Nocturnal Emission' pada remaja putra adalah tanda dari...", opts:["Quarter Life Crisis","Penyimpangan Seksual","Pubertas (Kematangan Fisik)","Infeksi Saluran Kemih"], ans:2, exp:"Nocturnal Emission (Mimpi basah) adalah tanda biologis pubertas primer."},
+  {q:"Modul pembinaan PIK Remaja yang dikhususkan untuk rentang usia 20-24 tahun dinamakan...", opts:["Berani","Beraksi","Berkolaborasi","Berencana"], ans:2, exp:"10-14 (Berani), 15-19 (Beraksi), 20-24 (Berkolaborasi)."},
+  {q:"Sikap menyimpulkan dan melabeli diri sendiri mengidap gangguan mental hanya bermodalkan artikel internet tanpa psikolog disebut...", opts:["Self Healing","Self Diagnose","Self Esteem","Self Love"], ans:1, exp:"Self Diagnose sangat berbahaya karena rawan overthinking dan penanganan salah."},
+  {q:"Dalam 10 Dimensi Kesiapan Berkeluarga, kesiapan untuk mencari nafkah dan memenuhi kebutuhan dasar masuk dalam dimensi...", opts:["Mental","Intelektual","Finansial","Sosial"], ans:2, exp:"Finansial mencakup kemandirian ekonomi."},
+  {q:"Perempuan yang menanggung peran ganda (bekerja di ranah publik sekaligus wajib mengurus ranah domestik sendirian) mengalami ketidaksetaraan gender bentuk...", opts:["Subordinasi","Marginalisasi","Double Burden (Beban Ganda)","Stereotip"], ans:2, exp:"Double burden adalah bentuk ketidakadilan gender."},
+  {q:"Prinsip pria 'tidak boleh menangis' dan 'harus mendominasi dengan agresi' yang merusak mental pria itu sendiri disebut...", opts:["Patriarki murni","Sexist joke","Toxic Masculinity","Hedonisme"], ans:2, exp:"Toxic Masculinity memaksa pria menekan emosi normalnya."},
+  {q:"Keputusan sadar pasangan suami istri untuk tidak memiliki anak (tanpa alasan medis) disebut...", opts:["Infertilitas","Child Free","Wedding Agreement","KB Permanen"], ans:1, exp:"Child Free merupakan fenomena modern atas hak pilihan reproduksi (meski jadi perdebatan sosial)."},
+  {q:"Perjanjian pranikah yang mengatur pembagian peran, harta, hingga batasan dalam rumah tangga disebut...", opts:["Dispensasi Nikah","Buku Nikah","Wedding Agreement","Harta Gono Gini"], ans:2, exp:"Wedding Agreement melindungi hak kedua belah pihak secara hukum/kesepakatan."},
+  {q:"Mengolok-olok bentuk tubuh teman secara langsung maupun di media sosial disebut...", opts:["Tokenisme","Body Shaming","Insecurity","Revenge Porn"], ans:1, exp:"Body shaming merusak Self Esteem (harga diri)."},
+  {q:"Kondisi anak bertumbuh kembang tanpa figur, keterlibatan, atau kedekatan emosional dari ayah disebut...", opts:["Toxic Parenting","Double Burden","Fatherless / Father Hunger","Orphanage"], ans:2, exp:"Indonesia disebut sebagai salah satu negara Fatherless yang memicu banyak krisis identitas remaja."},
+  {q:"Tindakan produktif secara berlebihan hingga merasa bersalah jika mengambil waktu istirahat (mengorbankan kesehatan) disebut...", opts:["Workaholic positif","Toxic Productivity","Time Management","Life Skill"], ans:1, exp:"Toxic Productivity merusak keseimbangan hidup (work-life balance)."},
+  {q:"Satuan Tugas yang dibentuk di kampus/sekolah untuk menangani kekerasan seksual sesuai amanat Permendikbud/UU TPKS adalah...", opts:["Satgas PPKS","Satgas Anti Narkoba","PIK Remaja","BKR"], ans:0, exp:"Satgas PPKS (Pencegahan dan Penanganan Kekerasan Seksual)."},
+  {q:"Kondisi dimana seseorang merasa bahagia justru ketika tidak ikut-ikutan tren media sosial atau bisa terlepas dari gawai disebut...", opts:["FOMO","Insecure","JOMO","Healing"], ans:2, exp:"JOMO = Joy Of Missing Out."},
+  {q:"Kehamilan 4T sangat berisiko, arti 'Terlalu Dekat' adalah...", opts:["Jarak kelahiran kurang dari 1 tahun","Jarak kelahiran kurang dari 2 tahun","Jarak rumah sakit dekat","Kehamilan sedarah"], ans:1, exp:"Idealnya jarak kelahiran adalah 2-3 tahun agar gizi ibu pulih."},
+  {q:"Memilih menikah pada usia 16 tahun dengan meminta izin pengadilan agama adalah proses yang disebut...", opts:["Isbat Nikah","Nikah Siri","Dispensasi Pernikahan","Kawin Kontrak"], ans:2, exp:"Dispensasi pernikahan dikeluarkan pengadilan bagi calon pengantin di bawah 19 tahun."},
+  {q:"Pemenuhan gizi remaja (Youth Nutrition) sangat krusial, zat gizi makro yang paling penting untuk pembentukan jaringan/sel adalah...", opts:["Zat Besi","Vitamin C","Protein","Kalsium"], ans:2, exp:"Protein untuk jaringan, Zat besi mencegah anemia."},
+  {q:"Candaan yang merendahkan atau melecehkan jenis kelamin tertentu (biasanya berlindung di balik kata 'baper') disebut...", opts:["Sexist Jokes","Dark Jokes","Cyberbullying","Love Bombing"], ans:0, exp:"Sexist jokes menormalisasi pelecehan verbal berbasis gender."},
+  {q:"Merasa diri tidak berharga, selalu kurang dibanding orang lain di media sosial adalah definisi dari...", opts:["Self Esteem rendah / Insecurity","Overthinking","Self Diagnose","Tokenisme"], ans:0, exp:"Insecurity lahir dari rendahnya Self Esteem (kepercayaan/harga diri)."},
+  {q:"Tabu pernikahan antar anggota keluarga dekat (Inses) tidak hanya karena norma, tapi karena berisiko genetik. Istilah penyimpangannya adalah...", opts:["Bisexual","Fantasi Sedarah (Incest)","Pedofilia","Poligami"], ans:1, exp:"Incest berisiko menularkan penyakit genetik resesif bawaan."},
+  {q:"Pusat Informasi dan Konseling yang dikelola dari, oleh, dan untuk remaja dinamakan...", opts:["BKR","Satgas PPKS","PIK-R","Posyandu Remaja"], ans:2, exp:"PIK-R memiliki Pendidik Sebaya dan Konselor Sebaya."},
+  {q:"Gaya hidup foya-foya dan mengutamakan kesenangan duniawi/materi di atas segalanya disebut...", opts:["Konsumtif","Hedonisme","Strawberry Generation","JOMO"], ans:1, exp:"Hedonisme merusak pengelolaan finansial dalam Kesiapan Berkeluarga."},
+  {q:"Program BKKBN yang menyasar orang tua yang memiliki remaja untuk diajarkan parenting adalah...", opts:["BKB","BKL","BKR","UPPKS"], ans:2, exp:"BKR = Bina Keluarga Remaja."},
+  {q:"AI (Artificial Intelligence) membawa dampak pada remaja, salah satu dampak negatif secara akademis jika tidak diiringi 10 Life Skills (Critical Thinking) adalah...", opts:["Inovasi belajar","Plagiarisme & kemalasan kognitif","Meningkatnya literasi digital","Mempercepat akses data"], ans:1, exp:"Ketergantungan AI tanpa filter mematikan critical thinking (Plagiarisme)."},
+  {q:"Hak individu untuk mengakses alat dan informasi guna mengatur jarak kelahiran merupakan pilar dari...", opts:["Hak Asasi Manusia","Hak Kesehatan Reproduksi & Seksual (HKSR)","Hak Anak","Hak Perkawinan"], ans:1, exp:"HKSR menjamin akses kontrasepsi dan informasi reproduksi."},
+  {q:"Peraturan/UU yang melindungi masyarakat dari Kekerasan Fisik dan Seksual di Ranah Rumah Tangga adalah...", opts:["UU PKDRT","UU TPKS","UU Narkotika","UU Perkawinan"], ans:0, exp:"UU Penghapusan Kekerasan Dalam Rumah Tangga (PKDRT)."},
+  {q:"Salah satu dari 10 Life Skill WHO yang menuntut kemampuan membaca emosi orang lain dan menempatkan diri di posisinya adalah...", opts:["Decision Making","Coping with Stress","Empathy","Creative Thinking"], ans:2, exp:"Empati (Empathy) membangun kecerdasan Interpersonal."},
+  {q:"Indikator utama sebuah negara berhasil keluar dari potensi 'Malapetaka Demografi' adalah...", opts:["Meningkatnya populasi lansia","Generasi mudanya berpendidikan dan terserap lapangan kerja (SDM unggul)","Bertambahnya penerima bansos","Pernikahan dini digalakkan"], ans:1, exp:"Bonus demografi harus dikonversi jadi bonus ekonomi lewat SDM unggul."}
+];
+
+// --- BANK SOAL ESAI (10 SOAL) ---
+const BANK_ESAY = [
+  {q:"[TEORI] Jelaskan perbedaan mendasar antara SDGs (Sustainable Development Goals) dengan MDGs terkait isu kesetaraan gender dan kemiskinan!"},
+  {q:"[TEORI] Apa yang dimaksud dengan Meaningful Youth Participation (MYP)? Bandingkan dengan konsep Tokenisme/Ageism dalam organisasi!"},
+  {q:"[TEORI] Uraikan 8 Fungsi Keluarga dan berikan analisis mengapa fungsi 'Cinta Kasih' sangat relevan untuk mengatasi fenomena Fatherless di Indonesia!"},
+  {q:"[TEORI] Berdasarkan 10 Life Skills dari WHO, pilih 3 skill yang menurut Anda paling krusial untuk menghadapi 'Quarter Life Crisis' dan jelaskan alasannya!"},
+  {q:"[TEORI] Sebutkan dan jelaskan makna filosofis di balik Rebranding logo BKKBN (bentuk hati, merangkul) serta jargon 'Berencana Itu Keren' bagi generasi Gen-Z."},
+  {q:"[KASUS] Rina (17 th) dan Budi (18 th) memutuskan memohon Dispensasi Pernikahan ke pengadilan dengan alasan menghindari zina. Analisis risiko keputusan ini dari sudut pandang Stunting, Kesiapan Finansial, dan UU No. 16/2019!"},
+  {q:"[KASUS] Di media sosial, seorang remaja putri mengalami 'Revenge Porn' oleh mantan pacarnya yang marah. Apa langkah advokasi yang bisa dilakukan oleh Satgas PPKS/PIK-R dengan menggunakan payung hukum UU TPKS?"},
+  {q:"[KASUS] Seorang pemuda dari 'Strawberry Generation' mengalami 'Toxic Productivity' dan FOMO parah karena melihat teman-temannya sukses. Analisis bagaimana ia bisa menerapkan konsep JOMO dan Self Love secara sehat!"},
+  {q:"[KASUS] Sepasang suami istri memutuskan untuk menunda memiliki anak menggunakan kontrasepsi berjangka panjang, namun keluarga besar menekan mereka dan menyebut tindakan itu 'melawan takdir'. Susun argumen asertif berdasarkan Hak Kesehatan Reproduksi!"},
+  {q:"[KASUS] Seorang remaja putri sering tidak konsentrasi belajar karena menderita Anemia berat, ia tidak mau makan karena takut gemuk (Body Shaming). Hubungkan kasus ini dengan program 'Ini Genting' dan konsumsi TTD!"}
+];
+
+let mode = 'PG'; let curPG = 0; let curES = 0; 
+let ansPG = new Array(50).fill(null); let ansES = new Array(10).fill('');
+
+function setMode(m){ 
+  mode=m; 
+  document.getElementById('tabPG').className = mode==='PG'?'tab active':'tab';
+  document.getElementById('tabES').className = mode==='ES'?'tab active':'tab';
+  render(); 
+}
+
+function calcScore(){
+  let correct = 0; let answered = 0;
+  for(let i=0; i<BANK_PG.length; i++){ if(ansPG[i] !== null){ answered++; if(ansPG[i] === BANK_PG[i].ans) correct++; } }
+  let pct = answered === 0 ? 0 : Math.round((correct/50)*100);
+  document.getElementById('skorDisplay').innerText = pct + '%';
+  let esaiAns = ansES.filter(x => x.trim().length > 10).length;
+  document.getElementById('esaiDisplay').innerText = esaiAns + '/10';
+}
+
+function selectOpt(idx){ if(ansPG[curPG] !== null) return; ansPG[curPG] = idx; render(); }
+
+function saveES(val){ ansES[curES] = val; calcScore(); }
+
+function next(){
+  if(mode === 'PG' && curPG < 49) curPG++;
+  if(mode === 'ES' && curES < 9) curES++;
+  render();
+}
+function prev(){
+  if(mode === 'PG' && curPG > 0) curPG--;
+  if(mode === 'ES' && curES > 0) curES--;
+  render();
+}
+function resetAll(){
+  if(confirm('Yakin ingin reset semua jawaban PG dan Esai?')){
+    ansPG.fill(null); ansES.fill(''); curPG=0; curES=0; render();
+  }
+}
+
+function render(){
+  calcScore();
+  let html = '';
+  if(mode === 'PG'){
+    document.getElementById('pillIndex').innerText = `PG Soal ${curPG+1}/50`;
+    let q = BANK_PG[curPG];
+    html += `<div class="qtitle">${curPG+1}. ${q.q}</div>`;
+    q.opts.forEach((opt, idx) => {
+      let cls = 'opt';
+      if(ansPG[curPG] !== null){
+        if(idx === q.ans) cls += ' correct';
+        else if(idx === ansPG[curPG]) cls += ' wrong';
+        else cls += ' disabled';
+      }
+      html += `<div class="${cls}" onclick="selectOpt(${idx})"><div style="font-weight:bold; width:20px;">${String.fromCharCode(65+idx)}.</div><div>${opt}</div></div>`;
+    });
+    if(ansPG[curPG] !== null){
+      html += `<div class="feedback" style="display:block;"><b>Pembahasan:</b> ${q.exp}</div>`;
+    }
+  } else {
+    document.getElementById('pillIndex').innerText = `ESAI Soal ${curES+1}/10`;
+    html += `<div class="qtitle">${curES+1}. ${BANK_ESAY[curES].q}</div>`;
+    html += `<textarea oninput="saveES(this.value)" placeholder="Ketik argumen dan analisis Anda di sini... (otomatis tersimpan)">${ansES[curES]}</textarea>`;
+  }
+  
+  html += `<div style="display:flex; justify-content:space-between; margin-top:20px;">
+    <button class="btn" onclick="prev()">Kembali</button>
+    <button class="btn primary" onclick="next()">Lanjut</button>
+  </div>`;
+  document.getElementById('contentArea').innerHTML = html;
+}
+
+// Init
+render();
+</script>
+</body>
+</html>
